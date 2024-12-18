@@ -1,0 +1,12 @@
+Metadata-Version: 2.1
+Name: grc-utils
+Version: 0.1.0
+Summary: Stand-alone utilities for all my Ancient Greek projects
+Home-page: https://github.com/Urdatorn/grc-utils
+Author: Albin Thörn Cleland
+Author-email: albin.thorn_cleland@klass.lu.se
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Description-Content-Type: text/markdown
+Requires-Dist: numpy>=1.21.0

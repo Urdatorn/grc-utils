@@ -24,10 +24,10 @@ Note concerning the logical relationship between the five accentuation word clas
 import re
 import unicodedata
 
-from utils.utils import oxia_to_tonos, open_syllable
-from utils.dichrona import DICHRONA
-from utils.erics_syllabifier import patterns, syllabifier
-from utils.longa import longa_set
+from utils import oxia_to_tonos, open_syllable
+from dichrona import DICHRONA
+from erics_syllabifier import patterns, syllabifier
+from longa import longa_set
 
 # ============================
 # Syllable Positions 

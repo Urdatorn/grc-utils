@@ -4,7 +4,7 @@
 
 import re
 import unicodedata
-from utils.macrons_map import macrons_map
+from .macrons_map import macrons_map
 
 # ============================
 # Regexes
@@ -86,3 +86,7 @@ def oxia_to_tonos(string):
     }
     return ''.join(mapping.get(char, char) for char in string)
 
+def normalize_word(word):
+    normalized = unicodedata.normalize('NFC', word)
+    tonos = oxia_to_tonos(normalized)
+    return tonos

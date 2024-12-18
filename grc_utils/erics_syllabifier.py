@@ -9,7 +9,7 @@ all double consonants and mutae-cum-liquidae are treated as closed, i.e.
 
 import re
 
-from utils.macrons_map import macrons_map
+from .macrons_map import macrons_map
 
 # ============================
 # Prepare Character Patterns
