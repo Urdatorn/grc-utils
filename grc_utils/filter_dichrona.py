@@ -231,6 +231,7 @@ def make_only_greek(string):
     """
     Extracts only valid Greek substrings using defined patterns.
     NB: Removes space and punctuation!
+    NB! Does not work for combining characters with macrons!
     'ἱππιᾱτρῐκός hippiātrikós' -> 'ἱππιᾱτρῐκός'
     'δῆμος' -> 'δῆμος'
     '12345' -> ''
