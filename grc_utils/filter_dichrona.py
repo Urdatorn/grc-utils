@@ -70,6 +70,7 @@ def properispomenon(word):
     >> properispomenon('ὗσον')
     >> True
     '''
+    word = word.replace('_', '').replace('^', '')
     list_of_syllables = syllabifier(word)
     if len(list_of_syllables) >= 2: 
         penultima = list_of_syllables[-2]
@@ -87,6 +88,7 @@ def paroxytone(word):
     >> paroxytone('λελῠμένος')
     >> True
     '''
+    word = word.replace('_', '').replace('^', '')
     list_of_syllables = syllabifier(word)
     if len(list_of_syllables) >= 2: 
         penultima = list_of_syllables[-2]
@@ -104,6 +106,7 @@ def proparoxytone(word):
     >> proparoxytone('ποτιδέρκομαι')
     >> True
     '''
+    word = word.replace('_', '').replace('^', '')
     list_of_syllables = syllabifier(word)
     if len(list_of_syllables) >= 3: 
         antepenultima = list_of_syllables[-3]
@@ -211,6 +214,7 @@ def long_acute(syllable):
     '''
     Function needed to compute the paroxytone versiom of the σωτῆρα-rule.
     '''
+    syllable = syllable.replace('_', '').replace('^', '')
     return bool(re.search(long_acutes, syllable))
 
 def short_vowel(syllable):
@@ -225,6 +229,8 @@ def short_vowel(syllable):
     Returns:
         bool: True if the syllable is short, False otherwise.
     """
+    if '^' in syllable:
+        return True
     long_vowels_pattern = re.compile('|'.join(re.escape(v) for v in longa_set | {'η', 'ω'}))
     return not bool(long_vowels_pattern.search(syllable))
 
