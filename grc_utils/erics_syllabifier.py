@@ -1,6 +1,6 @@
 '''
 divides the greek into syllables (adapted from DionysiusRecomposed)
-all double consonants and mutae-cum-liquidae are treated as closed, i.e.
+all double consonants and mutae-cum-liquidae are treated as closed (made for tragedy), i.e.
 >>syllabifier('πατρός')
 >>['πατ', 'ρός']
 >>syllabifier('ἄμμι')
@@ -58,7 +58,8 @@ def preprocess_text(text):
 
 def divide_into_elements(text):
     '''
-    Draws on the patterns dictionary to divide the text into elements
+    Draws on the patterns dictionary to divide the text into elements.
+    Keeps markup characters (^ and _) with their preceding character.
     '''
     elements = []
     i = 0
@@ -68,13 +69,22 @@ def divide_into_elements(text):
             match = re.match(pattern, text[i:])
             if match:
                 matched = True
-                elements.append(match.group())
+                element = match.group()
+                # Check for markup after the matched element
+                if i + len(element) < len(text) and text[i + len(element)] in '^_':
+                    element += text[i + len(element)]
+                    i += 1  # Skip the markup character in next iteration
+                elements.append(element)
                 i += len(match.group())
                 break
 
         if not matched:
             if text[i] == ' ':
                 elements.append(text[i])
+            elif text[i] in '^_':
+                # If we somehow got a lone markup character, attach it to previous element
+                if elements:
+                    elements[-1] += text[i]
             else:
                 elements.append(f"UNCLASSIFIED: {text[i]}")
                 print(f'erics_syllabifier.divide_into_elements:')

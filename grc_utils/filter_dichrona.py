@@ -24,10 +24,11 @@ Note concerning the logical relationship between the five accentuation word clas
 import re
 import unicodedata
 
-from .utils import oxia_to_tonos, open_syllable
+from .utils import no_macrons, oxia_to_tonos, open_syllable
 from .dichrona import DICHRONA
 from .erics_syllabifier import patterns, syllabifier
 from .longa import longa_set
+from .vowels import vowel
 
 # ============================
 # Syllable Positions 
@@ -481,3 +482,50 @@ def has_ambiguous_dichrona_in_open_syllables(string):
         return True
 
     return False
+
+def count_ambiguous_dichrona_in_open_syllables(string):
+    count = 0
+    
+    if not string:
+        return count
+
+    string = unicodedata.normalize('NFC', oxia_to_tonos(string))
+    if not has_ambiguous_dichrona(string):
+        return count
+    
+    words = re.findall(r'[\w_^]+', string)
+    words = [word for word in words if any(vowel(char) for char in word)]
+    for word in words:
+        list_of_syllables = syllabifier(word) # I've updated the syllabifier to support markup (^, _)
+        total_syllables = len(list_of_syllables)
+
+        dichronic_open_syllable_positions = [
+            (-(total_syllables - i), syllable)  # Position from the end
+            for i, syllable in enumerate(list_of_syllables)
+            if word_with_real_dichrona(syllable) and open_syllable(syllable)
+        ]
+        #print(dichronic_open_syllable_positions) # debugging
+
+        if not dichronic_open_syllable_positions:
+            continue
+        
+        if total_syllables < 2:
+            count += 1
+            continue
+        
+        ultima = list_of_syllables[-1]
+        penultima = list_of_syllables[-2]
+
+        for position, syllable in dichronic_open_syllable_positions:
+            if position == -2 and paroxytone(word) and short_vowel(ultima):
+                continue  # Penultima disambiguated
+            elif position == -1 and paroxytone(word) and long_acute(penultima):
+                continue  # Ultima disambiguated
+            elif position == -1 and properispomenon(word) or proparoxytone(word):
+                continue  # Ultima disambiguated
+            elif any(char in '^_' for char in syllable): # means syllable has been macronized already
+                continue
+            else:
+                count += 1
+
+    return count
