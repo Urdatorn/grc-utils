@@ -24,7 +24,7 @@ Note concerning the logical relationship between the five accentuation word clas
 import re
 import unicodedata
 
-from .utils import oxia_to_tonos, open_syllable
+from .utils import all_vowels_lowercase, only_bases, open_syllable, open_syllable_in_word, oxia_to_tonos
 from .dichrona import DICHRONA
 from .erics_syllabifier import patterns, syllabifier
 from .vowels_short import short_set
@@ -460,7 +460,7 @@ def has_ambiguous_dichrona_in_open_syllables(string):
     dichronic_open_syllable_positions = [
         (-(total_syllables - i), syllable)  # Position from the end
         for i, syllable in enumerate(list_of_syllables)
-        if word_with_real_dichrona(syllable) and open_syllable(syllable)
+        if word_with_real_dichrona(syllable) and open_syllable_in_word(syllable, list_of_syllables)
     ]
 
     if not dichronic_open_syllable_positions:
@@ -484,6 +484,10 @@ def has_ambiguous_dichrona_in_open_syllables(string):
 
     return False
 
+# ============================
+# Counting 
+# ============================
+
 def count_ambiguous_dichrona_in_open_syllables(string):
     count = 0
     
@@ -503,7 +507,7 @@ def count_ambiguous_dichrona_in_open_syllables(string):
         dichronic_open_syllable_positions = [
             (-(total_syllables - i), syllable)  # Position from the end
             for i, syllable in enumerate(list_of_syllables)
-            if word_with_real_dichrona(syllable) and open_syllable(syllable)
+            if word_with_real_dichrona(syllable) and open_syllable_in_word(syllable, list_of_syllables)
         ]
         #print(dichronic_open_syllable_positions) # debugging
 
@@ -527,6 +531,26 @@ def count_ambiguous_dichrona_in_open_syllables(string):
             elif any(char in '^_' for char in syllable): # means syllable has been macronized already
                 continue
             else:
+                count += 1
+
+    return count
+
+def count_dichrona_in_open_syllables(string):
+    count = 0
+    
+    if not string:
+        return count
+
+    string = unicodedata.normalize('NFC', oxia_to_tonos(string))
+    if not has_ambiguous_dichrona(string):
+        return count
+    
+    words = re.findall(r'[\w_^]+', string)
+    words = [word for word in words if any(vowel(char) for char in word)]
+    for word in words:
+        list_of_syllables = syllabifier(word)
+        for syllable in list_of_syllables:
+            if word_with_real_dichrona(syllable) and open_syllable_in_word(syllable, list_of_syllables) and not any(char in '^_' for char in syllable): # = unmacronized open dichronon
                 count += 1
 
     return count

@@ -59,11 +59,26 @@ def only_bases(word):
 
 def open_syllable(syllable):
     '''
-    Boolean!
+    Note! Works only for non-ultimae.
+    
+    For serious use, see open_syllable_in_word.
     '''
     syllable = syllable.replace('_', '').replace('^', '')
     base_form = only_bases(syllable)
     if base_form and base_form[-1] in all_vowels_lowercase:
+        return True
+    else:
+        return False
+    
+def open_syllable_in_word(syllable, list_of_syllables):
+    '''
+    Designed to accomodate ultimae with single final consonant (i.e. open in abstracto and in hiatus), e.g. both syllables in ἰσχύς return True.
+    '''
+    syllable = syllable.replace('_', '').replace('^', '')
+    base_form = only_bases(syllable)
+    if base_form and base_form[-1] in all_vowels_lowercase:
+        return True
+    elif syllable == list_of_syllables[-1].replace('_', '').replace('^', '') and (only_bases(syllable)[-2] in all_vowels_lowercase or only_bases(syllable)[-1] in all_vowels_lowercase):
         return True
     else:
         return False
