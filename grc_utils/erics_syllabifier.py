@@ -5,11 +5,18 @@ all double consonants and mutae-cum-liquidae are treated as closed (made for tra
 >>['πατ', 'ρός']
 >>syllabifier('ἄμμι')
 >>['ἄμ', 'μι']
+
+TODO Add option for comic homosyllabic mutae cum liquidae.
 '''
 
 import re
+import unicodedata
 
 from .macrons_map import macrons_map
+from .utils import normalize_word
+
+SHORT = '̆'
+LONG = '̄'
 
 # ============================
 # Prepare Character Patterns
@@ -24,8 +31,8 @@ macronized_vowels = list(macrons_map.keys())
 unmacronized_vowels = '|'.join(list('αεηιουωἀἁἐἑἠἡἰἱὀὁὐὑὠὡάὰέὲήὴόὸίὶὺύώὼ'
                                     'ἄἅἔἕὄὅὂὃἤἥἴἵὔὕὤὥἂἃἒἓἢἣἲἳὒὓὢὣ'
                                     'ᾶῆῖῦῶἇἆἦἧἶἷὖὗὦὧϋϊΐῒϋῢΰῗῧ'))
-# Combine both parts into a full alternation group
-all_vowels = '|'.join(re.escape(char) for char in macronized_vowels) + '|' + unmacronized_vowels
+# Combine both parts into a full alternation group and add optional combining marks
+all_vowels = '(' + '|'.join(re.escape(char) for char in macronized_vowels) + '|' + unmacronized_vowels + ')' + f'[{SHORT}{LONG}]?'
 
 # A few relevant regex conventions:
 # "Character classes" [...] match any one character from a list
@@ -41,7 +48,7 @@ patterns = {
     'nasals': r'[μν]',
     'double_cons': r'[ζξψ]',
     'sibilants': r'[σς]',
-    'vowels': f'({all_vowels})'
+    'vowels': all_vowels
 }
 
 # ============================
@@ -60,35 +67,56 @@ def divide_into_elements(text):
     '''
     Draws on the patterns dictionary to divide the text into elements.
     Keeps markup characters (^ and _) with their preceding character.
+    Also keeps combining diacritics with their base characters.
     '''
+    # First decompose the text to handle combining diacritics properly
+    decomposed = unicodedata.normalize('NFD', text)
+    
     elements = []
     i = 0
-    while i < len(text):
-        matched = False
-        for pattern in patterns.values():
-            match = re.match(pattern, text[i:])
-            if match:
-                matched = True
-                element = match.group()
-                # Check for markup after the matched element
-                if i + len(element) < len(text) and text[i + len(element)] in '^_':
-                    element += text[i + len(element)]
-                    i += 1  # Skip the markup character in next iteration
-                elements.append(element)
-                i += len(match.group())
-                break
-
-        if not matched:
-            if text[i] == ' ':
-                elements.append(text[i])
-            elif text[i] in '^_':
-                # If we somehow got a lone markup character, attach it to previous element
-                if elements:
-                    elements[-1] += text[i]
-            else:
-                elements.append(f"UNCLASSIFIED: {text[i]}")
-                print(f'erics_syllabifier.divide_into_elements:')
-                print(f"Warning: Unclassified element '{text[i]}' at position {i}")
+    while i < len(decomposed):
+        # If we're at a base character, collect all its combining marks
+        if unicodedata.category(decomposed[i]).startswith('L'):
+            # Get the base character
+            base_char = decomposed[i]
+            i += 1
+            # Collect all combining marks
+            combining_marks = ''
+            while i < len(decomposed) and unicodedata.category(decomposed[i]).startswith('M'):
+                combining_marks += decomposed[i]
+                i += 1
+            
+            # Try to match the recomposed character (base + combining marks)
+            recomposed = unicodedata.normalize('NFC', base_char + combining_marks)
+            matched = False
+            for pattern in patterns.values():
+                match = re.match(pattern, recomposed)
+                if match:
+                    matched = True
+                    element = recomposed
+                    # Check for markup after the matched element
+                    if i < len(decomposed) and decomposed[i] in '^_':
+                        element += decomposed[i]
+                        i += 1
+                    elements.append(element)
+                    break
+            
+            if not matched:
+                # Even if no pattern matches, keep the character with its combining marks
+                elements.append(recomposed)
+            
+        elif decomposed[i] == ' ':
+            elements.append(decomposed[i])
+            i += 1
+        elif decomposed[i] in '^_':
+            # If we somehow got a lone markup character, attach it to previous element
+            if elements:
+                elements[-1] += decomposed[i]
+            i += 1
+        else:
+            # Skip any other combining marks that appear out of place
+            if not unicodedata.category(decomposed[i]).startswith('M'):
+                elements.append(decomposed[i])
             i += 1
 
     return elements
@@ -210,7 +238,8 @@ def syllabifier(string):
 
     string -> list
     '''
-    cleaned_text = preprocess_text(string)
+    normalized_string = normalize_word(string)
+    cleaned_text = preprocess_text(normalized_string)
     divided_text = divide_into_elements(cleaned_text)
     joined_text = ' '.join(divided_text)
     syllabified_text = syllabify(joined_text)

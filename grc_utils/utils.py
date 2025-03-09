@@ -61,6 +61,7 @@ def open_syllable(syllable):
     '''
     Boolean!
     '''
+    syllable = syllable.replace('_', '').replace('^', '')
     base_form = only_bases(syllable)
     if base_form and base_form[-1] in all_vowels_lowercase:
         return True

@@ -347,3 +347,8 @@ VOWELS = set(
 def vowel(char):
     """Returns True if the character is a vowel, False otherwise."""
     return char in VOWELS
+
+ACUTES = set(
+    UPPER_ACUTE + UPPER_SMOOTH_ACUTE + UPPER_ROUGH_ACUTE + LOWER_ACUTE +
+    LOWER_SMOOTH_ACUTE + LOWER_ROUGH_ACUTE + LOWER_DIAERESIS_ACUTE
+)

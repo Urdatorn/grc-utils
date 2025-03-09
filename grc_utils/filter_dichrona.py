@@ -24,11 +24,11 @@ Note concerning the logical relationship between the five accentuation word clas
 import re
 import unicodedata
 
-from .utils import no_macrons, oxia_to_tonos, open_syllable
+from .utils import oxia_to_tonos, open_syllable
 from .dichrona import DICHRONA
 from .erics_syllabifier import patterns, syllabifier
-from .longa import longa_set
-from .vowels import vowel
+from .vowels_short import short_set
+from .vowels import ACUTES, vowel
 
 # ============================
 # Syllable Positions 
@@ -42,6 +42,7 @@ def ultima(word):
     >> ultima('ποτιδέρκομαι')
     >> μαι
     '''
+    word = word.replace('_', '').replace('^', '')
     list_of_syllables = syllabifier(word)
     ultima = list_of_syllables[-1]
 
@@ -52,6 +53,7 @@ def penultima(word):
     >> penultima('ποτιδέρκομαι')
     >> κο
     '''
+    word = word.replace('_', '').replace('^', '')
     list_of_syllables = syllabifier(word)
     penultima = list_of_syllables[-2]
 
@@ -212,27 +214,20 @@ long_acutes = r'(' + '|'.join(re.escape(char) for char in dichrona_long_acutes) 
 
 def long_acute(syllable):
     '''
-    Function needed to compute the paroxytone versiom of the σωτῆρα-rule.
+    Function needed to compute the paroxytone version of the σωτῆρα-rule.
     '''
-    syllable = syllable.replace('_', '').replace('^', '')
+    if '_' in syllable and any(char in ACUTES for char in syllable):
+        return True
     return bool(re.search(long_acutes, syllable))
 
 def short_vowel(syllable):
     """
-    Determines if a syllable is a short vowel.
-
-    A syllable is considered short if it is not in the set of long vowels.
-
-    Args:
-        syllable (str): The syllable to check.
-
-    Returns:
-        bool: True if the syllable is short, False otherwise.
+    Determines if a syllable is a short vowel. Compatible with caret markup of brevia.
     """
     if '^' in syllable:
         return True
-    long_vowels_pattern = re.compile('|'.join(re.escape(v) for v in longa_set | {'η', 'ω'}))
-    return not bool(long_vowels_pattern.search(syllable))
+
+    return any(vowel in syllable for vowel in short_set)
 
 def make_only_greek(string):
     """
