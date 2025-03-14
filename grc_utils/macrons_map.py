@@ -1,5 +1,5 @@
 '''
-All the 62 characters with vowel length used on Wiktionary
+All the 62 (more like 70 now) characters with vowel length used on Wiktionary
 The 12 letters ᾰᾸᾱᾹῐῘῑῙῠῨῡῩ with macron or vrachy as only diacritic exist in both precomposed and composed versions
 '''
 macrons_map = {
