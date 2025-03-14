@@ -34,15 +34,19 @@ longa_brevi = r'[ᾰᾸᾱᾹῐῘῑῙῠῨῡῩ]'
 def no_macrons(string):
     """
     Replace characters in the input string based on the macrons_map dictionary.
-
-    Args:
-        string (str): The input string to process.
-
-    Returns:
-        str: The string with substitutions applied.
+    UPDATE 14/03: Handles both single characters and multi-character sequences.
+    Christ, how could I have missed this?? Don't want to think about the bugs that might exist bc of this...
     """
-    # Use a list comprehension to replace each character if it exists in macrons_map
-    return ''.join(macrons_map.get(char, char) for char in string)
+    # Get all multi-character sequences from macrons_map
+    multi_char_keys = sorted([k for k in macrons_map.keys() if len(k) > 1], key=len, reverse=True)
+    
+    # First replace all multi-character sequences
+    result = string
+    for key in multi_char_keys:
+        result = result.replace(key, macrons_map[key])
+    
+    # Then handle single characters
+    return ''.join(macrons_map.get(char, char) for char in result)
 
 def base(char):
     '''
