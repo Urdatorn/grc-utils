@@ -23,8 +23,9 @@ Note concerning the logical relationship between the five accentuation word clas
 '''
 import re
 import unicodedata
+from tqdm import tqdm
 
-from .utils import all_vowels_lowercase, only_bases, open_syllable, open_syllable_in_word, oxia_to_tonos
+from .utils import all_vowels_lowercase, only_bases, open_syllable, open_syllable_in_word, oxia_to_tonos # type: ignore
 from .dichrona import DICHRONA
 from .erics_syllabifier import patterns, syllabifier
 from .vowels_short import short_set
@@ -500,7 +501,7 @@ def count_ambiguous_dichrona_in_open_syllables(string):
     
     words = re.findall(r'[\w_^]+', string)
     words = [word for word in words if any(vowel(char) for char in word)]
-    for word in words:
+    for word in tqdm(words, desc="Counting ambiguous dichrona in open syllables", leave=False):
         list_of_syllables = syllabifier(word) # I've updated the syllabifier to support markup (^, _)
         total_syllables = len(list_of_syllables)
 
@@ -547,7 +548,7 @@ def count_dichrona_in_open_syllables(string):
     
     words = re.findall(r'[\w_^]+', string)
     words = [word for word in words if any(vowel(char) for char in word)]
-    for word in words:
+    for word in tqdm(words, desc="Counting dichrona in open syllables", leave=False):
         list_of_syllables = syllabifier(word)
         for syllable in list_of_syllables:
             if word_with_real_dichrona(syllable) and open_syllable_in_word(syllable, list_of_syllables) and not any(char in '^_' for char in syllable): # = unmacronized open dichronon
