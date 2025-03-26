@@ -61,18 +61,18 @@ def only_bases(word):
     '''
     return ''.join([base(char) for char in word if re.search(base_alphabet, base(char))])
 
-def open_syllable(syllable):
-    '''
-    Note! Works only for non-ultimae.
+# def open_syllable(syllable):
+#     '''
+#     Note! Works only for non-ultimae.
     
-    For serious use, see open_syllable_in_word.
-    '''
-    syllable = syllable.replace('_', '').replace('^', '')
-    base_form = only_bases(syllable)
-    if base_form and base_form[-1] in all_vowels_lowercase:
-        return True
-    else:
-        return False
+#     For serious use, see open_syllable_in_word.
+#     '''
+#     syllable = syllable.replace('_', '').replace('^', '')
+#     base_form = only_bases(syllable)
+#     if base_form and base_form[-1] in all_vowels_lowercase:
+#         return True
+#     else:
+#         return False
     
 def open_syllable_in_word(syllable, list_of_syllables):
     '''

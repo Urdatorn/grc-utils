@@ -25,7 +25,7 @@ import re
 import unicodedata
 from tqdm import tqdm
 
-from .utils import all_vowels_lowercase, only_bases, open_syllable, open_syllable_in_word, oxia_to_tonos # type: ignore
+from .utils import open_syllable_in_word, oxia_to_tonos
 from .dichrona import DICHRONA
 from .erics_syllabifier import patterns, syllabifier
 from .vowels_short import short_set
