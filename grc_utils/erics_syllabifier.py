@@ -173,6 +173,9 @@ def syllabify(divided_text):
     return syllables
 
 def reshuffle_consonants(syllables):
+    '''
+    Fixed double consonants being incorrectly moved to the next syllable.
+    '''
     reshuffled_syllables = []
     carry_over = ''
 
@@ -190,15 +193,20 @@ def reshuffle_consonants(syllables):
         syllable = carry_over + syllable
         carry_over = ''
 
-        # Simple and Complex case handling
+        # Handle syllable ending
         if i < len(syllables) - 1 and is_consonant(syllable[-1]):
             next_syllable = syllables[i + 1]
             if is_vowel(next_syllable[0]):
-                # Move last consonant to next syllable (Simple case)
-                carry_over = syllable[-1]
-                syllable = syllable[:-1]
+                # Check if the last character is a double consonant
+                if re.match(patterns['double_cons'], syllable[-1]):
+                    # Double consonants stay with the current syllable
+                    carry_over = ''
+                else:
+                    # Single consonant moves to next syllable
+                    carry_over = syllable[-1]
+                    syllable = syllable[:-1]
             else:
-                # Complex case
+                # Complex case: multiple consonants at end
                 consonant_cluster = ''.join(filter(is_consonant, syllable))
                 if len(consonant_cluster) > 1:
                     carry_over = consonant_cluster[1:]
@@ -206,7 +214,7 @@ def reshuffle_consonants(syllables):
 
         reshuffled_syllables.append(syllable)
 
-    # Add any remaining carry over to the last syllable
+    # Add any remaining carry_over to the last syllable
     if carry_over:
         reshuffled_syllables[-1] += carry_over
 
