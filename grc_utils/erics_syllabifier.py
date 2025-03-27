@@ -7,11 +7,13 @@ all double consonants and mutae-cum-liquidae are treated as closed (made for tra
 >>['ἄμ', 'μι']
 
 TODO Add option for comic homosyllabic mutae cum liquidae.
+TODO 27/3 -25 I'm getting some shitty split diphthongs like: [(-4, 'δα'), (-3, 'ρε'), (-2, 'ῖ'), (-1, 'ος')]
 '''
 
 import re
 import unicodedata
 
+from .lower_grc import CONSONANTS_LOWER_TO_UPPER, CONSONANTS_UPPER_TO_LOWER, VOWELS_LOWER_TO_UPPER, VOWELS_UPPER_TO_LOWER
 from .macrons_map import macrons_map
 from .utils import normalize_word
 
@@ -27,12 +29,19 @@ LONG = '̄'
 # NB2: requires corpus normalized to not include the oxia variants of άέήίόύώ, only tonos
 # NB3: since wiktionary has macrons, I added vowels with macra and brevia from macrons_map.py
 
-macronized_vowels = list(macrons_map.keys())
-unmacronized_vowels = '|'.join(list('αεηιουωἀἁἐἑἠἡἰἱὀὁὐὑὠὡάὰέὲήὴόὸίὶὺύώὼ'
-                                    'ἄἅἔἕὄὅὂὃἤἥἴἵὔὕὤὥἂἃἒἓἢἣἲἳὒὓὢὣ'
-                                    'ᾶῆῖῦῶἇἆἦἧἶἷὖὗὦὧϋϊΐῒϋῢΰῗῧ'))
-# Combine both parts into a full alternation group and add optional combining marks
-all_vowels = '(' + '|'.join(re.escape(char) for char in macronized_vowels) + '|' + unmacronized_vowels + ')' + f'[{SHORT}{LONG}]?'
+macronized_vowels = list(macrons_map.keys())  # Contains both upper and lower case vowels with macrons
+unmacronized_vowels = list('αεηιουωἀἁἐἑἠἡἰἱὀὁὐὑὠὡάὰέὲήὴόὸίὶὺύώὼ'
+                          'ἄἅἔἕὄὅὂὃἤἥἴἵὔὕὤὥἂἃἒἓἢἣἲἳὒὓὢὣ'
+                          'ᾶῆῖῦῶἇἆἦἧἶἷὖὗὦὧϋϊΐῒϋῢΰῗῧ')
+
+# Combine initial vowel sets and expand with uppercase forms
+initial_vowels = set(macronized_vowels + unmacronized_vowels)
+all_vowels_expanded = set()
+for char in initial_vowels:
+    all_vowels_expanded.add(char)
+    if char in VOWELS_LOWER_TO_UPPER:
+        all_vowels_expanded.add(VOWELS_LOWER_TO_UPPER[char])
+all_vowels = '(' + '|'.join(re.escape(char) for char in all_vowels_expanded) + ')' + f'[{SHORT}{LONG}]?'
 
 # A few relevant regex conventions:
 # "Character classes" [...] match any one character from a list
@@ -43,11 +52,11 @@ patterns = {
     'diphth_i': r'(α|ε|ο|υ)(ἰ|ί|ι|ῖ|ἴ|ἶ|ἵ|ἱ|ἷ|ὶ|ἲ|ἳ)', # -''-
     'adscr_i': r'(α|η|ω|ἀ|ἠ|ὠ|ἁ|ἡ|ὡ|ά|ή|ώ|ὰ|ὴ|ὼ|ᾶ|ῆ|ῶ|ὤ|ὥ|ὢ|ὣ|ἄ|ἅ|ἂ|ἃ|ἤ|ἥ|ἣ|ἢ|ἦ|ἧ|ἆ|ἇ|ὧ|ὦ)(ι)', # -''-
     'subscr_i': r'[ᾄᾂᾆᾀᾅᾃᾇᾁᾴᾲᾷᾳᾔᾒᾖᾐᾕᾓᾗᾑῄῂῃῇᾤᾢᾦᾠᾥᾣᾧᾡῴῲῷῳ]', # note [] for single chars. 36 chars
-    'stops': r'[πκτβδγφχθ]',
-    'liquids': r'[ρλῥ]',
-    'nasals': r'[μν]',
-    'double_cons': r'[ζξψ]',
-    'sibilants': r'[σς]',
+    'stops': r'[βγδθκπτφχΒΓΔΘΚΠΤΦΧ]',
+    'liquids': r'[λρῤῥΛῬ]',
+    'nasals': r'[μνΜΝ]',
+    'double_cons': r'[ζξψΖΞΨ]',
+    'sibilants': r'[σςΣ]',
     'vowels': all_vowels
 }
 
@@ -56,11 +65,8 @@ patterns = {
 # ============================
 
 def preprocess_text(text):
-    # Characters to be ignored
-    ignore_chars = set('\n\'(),-.·;<>[]«»;;··†—‘’' + '×⏑⏓–')
-
-    # Removing the ignored characters from the text, but keeping spaces
-    cleaned_text = ''.join([char if char != ' ' else ' ' for char in text.lower() if char not in ignore_chars])
+    ignore_chars = set('\n\'(),-.·;<>[]«»;;··†—‘’' + '×⏑⏓–') # importantly leaves ^_
+    cleaned_text = ''.join([char for char in text if char not in ignore_chars]) # leaves case alone
     return cleaned_text
 
 def divide_into_elements(text):
@@ -128,24 +134,40 @@ def is_consonant(element):
     return any(re.match(patterns[consonant_type], element) for consonant_type in ['stops', 'liquids', 'nasals', 'double_cons', 'sibilants'])
 
 def syllabify(divided_text):
+    '''
+    This version looks ahead and if there is a vowel in the next element,
+    it checks if it can form a diphthong with the current element that matches any of the four patterns.
+    Thus we can syllabify e.g. 'Δα', 'ρεῖ', 'ος'.
+    '''
     elements = divided_text.split()
     syllables = []
     current_syllable = ''
-
-    for element in elements:
+    i = 0
+    while i < len(elements):
+        element = elements[i]
         if is_vowel(element):
-            # If there's already content in the current syllable, add it as a complete syllable
+            # Check if this vowel can form a diphthong with the next element
+            if i + 1 < len(elements) and is_vowel(elements[i + 1]):
+                potential_diphthong = element + elements[i + 1]
+                if (re.match(patterns['diphth_y'], potential_diphthong) or 
+                    re.match(patterns['diphth_i'], potential_diphthong)):
+                    # Combine into a diphthong
+                    if current_syllable:
+                        syllables.append(current_syllable)
+                        current_syllable = ''
+                    current_syllable = potential_diphthong
+                    i += 2  # Skip the next element since it's part of the diphthong
+                    continue
+            # If no diphthong, treat as a standalone vowel
             if current_syllable:
                 syllables.append(current_syllable)
                 current_syllable = ''
-
-            # Add the vowel to the current (now empty) syllable
             current_syllable = element
+            i += 1
         else:
             # Add non-vowel elements to the current syllable
             current_syllable += element
-
-    # Add the final syllable if it exists
+            i += 1
     if current_syllable:
         syllables.append(current_syllable)
     return syllables
