@@ -560,8 +560,6 @@ def colour_dichrona_in_open_syllables(string):
 
     # Normalize and convert oxia to tonos
     string = unicodedata.normalize('NFC', oxia_to_tonos(string))
-    if not has_ambiguous_dichrona(string):
-        return string
     
     # Split into words and filter for those with vowels
     words = re.findall(r'[\w_^]+', string)
