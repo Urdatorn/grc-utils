@@ -76,14 +76,20 @@ def only_bases(word):
     
 def open_syllable_in_word(syllable, list_of_syllables):
     '''
-    Designed to accomodate ultimae with single final consonant (i.e. open in abstracto and in hiatus), e.g. both syllables in ἰσχύς return True.
+    Designed to accomodate 
+    - "True" for ultimae with single final consonant (i.e. open in abstracto and in hiatus), e.g. both syllables in ἰσχύς return True.
+    - False for ultimae with any of the three double consonants 'ζ','ξ','ψ'.
     '''
     syllable = syllable.replace('_', '').replace('^', '')
     base_form = only_bases(syllable)
+
+    if base_form[-1] in {'ζ','ξ','ψ'}:
+        return False
     if base_form and base_form[-1] in all_vowels_lowercase:
         return True
-    elif syllable == list_of_syllables[-1].replace('_', '').replace('^', '') and (only_bases(syllable)[-2] in all_vowels_lowercase or only_bases(syllable)[-1] in all_vowels_lowercase):
-        return True
+    elif len(base_form) > 1: 
+        if syllable == list_of_syllables[-1].replace('_', '').replace('^', '') and base_form[-2] in all_vowels_lowercase:
+            return True
     else:
         return False
 

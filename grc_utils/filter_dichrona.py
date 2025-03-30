@@ -617,7 +617,3 @@ def colour_dichrona_in_open_syllables(string):
     result.append(string[last_end:])
     
     return "".join(result)
-
-# Example usage (assuming helper functions are defined):
-# text = "ανοιχτός κ^όσ_μος"
-# print(colour_dichrona_in_open_syllables(text))
