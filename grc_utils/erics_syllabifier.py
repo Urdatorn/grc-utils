@@ -6,6 +6,9 @@ all double consonants and mutae-cum-liquidae are treated as closed (made for tra
 >>syllabifier('ἄμμι')
 >>['ἄμ', 'μι']
 
+NOTE requires corpus normalized to not include the oxia variants of άέήίόύώ, only tonos
+NOTE since wiktionary has macrons, I added vowels with macra and brevia from macrons_map.py
+
 TODO Add option for comic homosyllabic mutae cum liquidae.
 TODO 27/3 -25 I'm getting some shitty split diphthongs like: [(-4, 'δα'), (-3, 'ρε'), (-2, 'ῖ'), (-1, 'ος')]
 '''
@@ -24,11 +27,6 @@ LONG = '̄'
 # Prepare Character Patterns
 # ============================
 
-# Albin:
-# NB1: there was a bug, an ᾶ in the subscr_i 
-# NB2: requires corpus normalized to not include the oxia variants of άέήίόύώ, only tonos
-# NB3: since wiktionary has macrons, I added vowels with macra and brevia from macrons_map.py
-
 macronized_vowels = list(macrons_map.keys())  # Contains both upper and lower case vowels with macrons
 unmacronized_vowels = list('αεηιουωἀἁἐἑἠἡἰἱὀὁὐὑὠὡάὰέὲήὴόὸίὶὺύώὼ'
                           'ἄἅἔἕὄὅὂὃἤἥἴἵὔὕὤὥἂἃἒἓἢἣἲἳὒὓὢὣ'
@@ -43,14 +41,11 @@ for char in initial_vowels:
         all_vowels_expanded.add(VOWELS_LOWER_TO_UPPER[char])
 all_vowels = '(' + '|'.join(re.escape(char) for char in all_vowels_expanded) + ')' + f'[{SHORT}{LONG}]?'
 
-# A few relevant regex conventions:
-# "Character classes" [...] match any one character from a list
-# "Capture groups" (...) capture the match for later use; used for "alternation" (...|...) and combinations (...)(...)
 #   - NB: regexes of several combining characters together like '\u03B1\u0306' and '\u0391\u0306' must use alternation, i.e. ( | )
 patterns = {
-    'diphth_y': r'(α|ε|η|ο)(ὐ|ὔ|υ|ὑ|ύ|ὖ|ῦ|ὕ|ὗ|ὺ|ὒ|ὓ)', # note () for alternation and combination
-    'diphth_i': r'(α|ε|υ|ο)(ἰ|ί|ι|ῖ|ἴ|ἶ|ἵ|ἱ|ἷ|ὶ|ἲ|ἳ)', # -''-
-    'adscr_i': r'(α|η|ω|ἀ|ἠ|ὠ|ἁ|ἡ|ὡ|ά|ή|ώ|ὰ|ὴ|ὼ|ᾶ|ῆ|ῶ|ὤ|ὥ|ὢ|ὣ|ἄ|ἅ|ἂ|ἃ|ἤ|ἥ|ἣ|ἢ|ἦ|ἧ|ἆ|ἇ|ὧ|ὦ)(ι)', # -''-
+    'diphth_y': r'(α|ε|η|ο)(ὐ|ὔ|υ|ὑ|ύ|ὖ|ῦ|ὕ|ὗ|ὺ|ὒ|ὓ)',
+    'diphth_i': r'(α|ε|υ|ο)(ἰ|ί|ι|ῖ|ἴ|ἶ|ἵ|ἱ|ἷ|ὶ|ἲ|ἳ)',
+    'adscr_i': r'(α|η|ω|ἀ|ἠ|ὠ|ἁ|ἡ|ὡ|ά|ή|ώ|ὰ|ὴ|ὼ|ᾶ|ῆ|ῶ|ὤ|ὥ|ὢ|ὣ|ἄ|ἅ|ἂ|ἃ|ἤ|ἥ|ἣ|ἢ|ἦ|ἧ|ἆ|ἇ|ὧ|ὦ)(ι)',
     'subscr_i': r'[ᾄᾂᾆᾀᾅᾃᾇᾁᾴᾲᾷᾳᾔᾒᾖᾐᾕᾓᾗᾑῄῂῃῇᾤᾢᾦᾠᾥᾣᾧᾡῴῲῷῳ]', # note [] for single chars. 36 chars
     'stops': r'[βγδθκπτφχΒΓΔΘΚΠΤΦΧ]',
     'liquids': r'[λρῤῥΛῬ]',
@@ -150,7 +145,8 @@ def syllabify(divided_text):
             if i + 1 < len(elements) and is_vowel(elements[i + 1]):
                 potential_diphthong = element + elements[i + 1]
                 if (re.match(patterns['diphth_y'], potential_diphthong) or 
-                    re.match(patterns['diphth_i'], potential_diphthong)):
+                    re.match(patterns['diphth_i'], potential_diphthong) or
+                    re.match(patterns['adscr_i'], potential_diphthong)):
                     # Combine into a diphthong
                     if current_syllable:
                         syllables.append(current_syllable)
