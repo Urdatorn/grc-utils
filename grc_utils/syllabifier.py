@@ -1,10 +1,15 @@
 '''
 divides the greek into syllables (adapted from DionysiusRecomposed)
-all double consonants and mutae-cum-liquidae are treated as closed (made for tragedy), i.e.
+
+1) all double consonants and mutae-cum-liquidae are treated as closed (made for tragedy), i.e.
 >>syllabifier('πατρός')
 >>['πατ', 'ρός']
 >>syllabifier('ἄμμι')
 >>['ἄμ', 'μι']
+
+2) handles adscripts, e.g.
+>>syllabifier('δεινῆι')
+>>['δει', 'νῆι']
 
 NOTE requires corpus normalized to not include the oxia variants of άέήίόύώ, only tonos
 NOTE since wiktionary has macrons, I added vowels with macra and brevia from macrons_map.py

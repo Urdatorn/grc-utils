@@ -27,7 +27,7 @@ from tqdm import tqdm
 
 from .utils import open_syllable_in_word, oxia_to_tonos
 from .dichrona import DICHRONA
-from .erics_syllabifier import patterns, syllabifier
+from .syllabifier import patterns, syllabifier
 from .vowels_short import short_set
 from .vowels import ACUTES, vowel
 

@@ -2,7 +2,7 @@
 
 from .clitics import *
 from .dichrona import *
-from .erics_syllabifier import *
+from .syllabifier import *
 from .filter_dichrona import *
 from .lower_grc import *
 from .macrons_map import *
