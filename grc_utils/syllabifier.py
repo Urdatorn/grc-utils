@@ -65,7 +65,7 @@ patterns = {
 # ============================
 
 def preprocess_text(text):
-    ignore_chars = set('\n(),-.·;<>[]«»;;··†—‘’' + '×⏑⏓–') # importantly leaves ^_
+    ignore_chars = set('\n(),-.·;<>[]«»;;··†—‘’' + '×⏑⏓–') # importantly leaves ^, _ and '
     cleaned_text = ''.join([char for char in text if char not in ignore_chars]) # leaves case alone
     return cleaned_text
 
