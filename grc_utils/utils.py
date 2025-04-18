@@ -5,6 +5,7 @@
 import re
 import unicodedata
 from .macrons_map import macrons_map
+from .vowels import vowel
 
 # ============================
 # Regexes
@@ -61,11 +62,9 @@ def only_bases(word):
     '''
     return ''.join([base(char) for char in word if re.search(base_alphabet, base(char))])
 
-# def open_syllable(syllable):
+# def open_syllable_simple(syllable):
 #     '''
-#     Note! Works only for non-ultimae.
-    
-#     For serious use, see open_syllable_in_word.
+#     For most uses, see open_syllable_in_word.
 #     '''
 #     syllable = syllable.replace('_', '').replace('^', '')
 #     base_form = only_bases(syllable)
@@ -76,9 +75,14 @@ def only_bases(word):
     
 def open_syllable_in_word(syllable, list_of_syllables):
     '''
+    NOTE designed for words in abstracto:
+    if applied word-by-word to words in synapheia like ἐλπὶς δὲ it will incorrely label -πὶς as open
+
     Designed to accomodate 
     - "True" for ultimae with single final consonant (i.e. open in abstracto and in hiatus), e.g. both syllables in ἰσχύς return True.
     - False for ultimae with any of the three double consonants 'ζ','ξ','ψ'.
+
+    TODO problem with words where the ultima is identical to some earlier syllable
     '''
     syllable = syllable.replace('_', '').replace('^', '')
     base_form = only_bases(syllable)
@@ -88,6 +92,27 @@ def open_syllable_in_word(syllable, list_of_syllables):
     if base_form and base_form[-1] in all_vowels_lowercase:
         return True
     elif len(base_form) > 1: 
+        if syllable == list_of_syllables[-1].replace('_', '').replace('^', '') and base_form[-2] in all_vowels_lowercase:
+            return True
+    else:
+        return False
+    
+def is_open_syllable_in_word_in_synapheia(syllable, list_of_syllables, next_word):
+    '''
+    NOTE designed for words in verse synapheia:
+    
+    >>> is_open_syllable_in_word_in_synapheia("ἐλπὶς", ["ἐλ", "πὶς"], "δὲ"):
+    >>> True
+
+    '''
+    syllable = syllable.replace('_', '').replace('^', '')
+    base_form = only_bases(syllable)
+
+    if base_form[-1] in {'ζ','ξ','ψ'}:
+        return False
+    if base_form and base_form[-1] in all_vowels_lowercase:
+        return True
+    elif len(base_form) > 1 and vowel(next_word[0]): 
         if syllable == list_of_syllables[-1].replace('_', '').replace('^', '') and base_form[-2] in all_vowels_lowercase:
             return True
     else:
