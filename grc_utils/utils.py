@@ -112,7 +112,10 @@ def is_open_syllable_in_word_in_synapheia(syllable, list_of_syllables, next_word
         return False
     if base_form and base_form[-1] in all_vowels_lowercase:
         return True
-    elif len(base_form) > 1 and vowel(next_word[0]): 
+    elif len(base_form) > 1 and not next_word: 
+        if syllable == list_of_syllables[-1].replace('_', '').replace('^', '') and base_form[-2] in all_vowels_lowercase:
+            return True
+    elif len(base_form) > 1 and next_word and vowel(next_word[0]): 
         if syllable == list_of_syllables[-1].replace('_', '').replace('^', '') and base_form[-2] in all_vowels_lowercase:
             return True
     else:

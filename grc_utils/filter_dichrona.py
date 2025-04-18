@@ -24,7 +24,7 @@ Note concerning the logical relationship between the five accentuation word clas
 import re
 import unicodedata
 
-from .utils import open_syllable_in_word, oxia_to_tonos
+from .utils import is_open_syllable_in_word_in_synapheia, open_syllable_in_word, oxia_to_tonos
 from .dichrona import DICHRONA
 from .syllabifier import patterns, syllabifier
 from .vowels_short import short_set
@@ -545,11 +545,17 @@ def count_dichrona_in_open_syllables(string):
     
     words = re.findall(r'[\w_^]+', string)
     words = [word for word in words if any(vowel(char) for char in word)]
-    for word in words:
+    for i, word in enumerate(words):
         list_of_syllables = syllabifier(word)
-        for syllable in list_of_syllables:
-            if word_with_real_dichrona(syllable) and open_syllable_in_word(syllable, list_of_syllables) and not any(char in '^_' for char in syllable): # = unmacronized open dichronon
-                count += 1
+        if i < len(words) - 1:
+            next_word = words[i + 1]
+            for syllable in list_of_syllables:
+                if word_with_real_dichrona(syllable) and is_open_syllable_in_word_in_synapheia(syllable, list_of_syllables, next_word) and not any(char in '^_' for char in syllable): # = unmacronized open dichronon in synapheia
+                    count += 1
+        else:
+            for syllable in list_of_syllables:
+                if word_with_real_dichrona(syllable) and open_syllable_in_word(syllable, list_of_syllables) and not any(char in '^_' for char in syllable): # = unmacronized open dichronon at line end
+                    count += 1
 
     return count
 

@@ -1,13 +1,15 @@
+LICENSE
 README.md
 pyproject.toml
 setup.py
 grc_utils/__init__.py
 grc_utils/clitics.py
 grc_utils/dichrona.py
-grc_utils/erics_syllabifier.py
 grc_utils/filter_dichrona.py
+grc_utils/lower_grc.py
 grc_utils/macrons_map.py
-grc_utils/sort.py
+grc_utils/sort_grc.py
+grc_utils/syllabifier.py
 grc_utils/utils.py
 grc_utils/vowels.py
 grc_utils/vowels_longa.py

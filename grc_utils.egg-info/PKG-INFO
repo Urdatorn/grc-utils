@@ -1,4 +1,4 @@
-Metadata-Version: 2.2
+Metadata-Version: 2.4
 Name: grc-utils
 Version: 0.1.0
 Summary: Stand-alone utilities for all my Ancient Greek projects
@@ -9,11 +9,23 @@ Classifier: Programming Language :: Python :: 3
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
 Description-Content-Type: text/markdown
+License-File: LICENSE
 Requires-Dist: numpy>=1.21.0
 Dynamic: author
 Dynamic: author-email
 Dynamic: classifier
+Dynamic: description
 Dynamic: description-content-type
 Dynamic: home-page
+Dynamic: license-file
 Dynamic: requires-dist
 Dynamic: summary
+
+# Ancient Greek NLP utilities
+
+A bunch of NLP tools in Python for `grc` not available elsewhere. Examples:
+
+- standard .lower() and .upper() do *not* work for `grc`, but my `lower_grc` and `upper_grc` do.
+- `no_macrons`: removes unicode vowel-length diacritics (longa and brevia) in a way that keeps all other diacritics intact.
+
+© Albin Thörn Cleland, PhD student at Lunds universitet, Sweden.
