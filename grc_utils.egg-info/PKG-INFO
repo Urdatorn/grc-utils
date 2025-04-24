@@ -1,9 +1,9 @@
 Metadata-Version: 2.4
 Name: grc-utils
-Version: 0.1.0
-Summary: Stand-alone utilities for all my Ancient Greek projects
+Version: 0.2.0
+Summary: NLP utilities for Ancient Greek
 Home-page: https://github.com/Urdatorn/grc-utils
-Author: Albin Thörn Cleland
+Author: Albin Ruben Johannes Thörn Cleland
 Author-email: albin.thorn_cleland@klass.lu.se
 Classifier: Programming Language :: Python :: 3
 Classifier: License :: OSI Approved :: MIT License
