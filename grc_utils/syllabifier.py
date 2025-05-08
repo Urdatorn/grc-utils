@@ -52,7 +52,7 @@ patterns = {
     'diphth_i': r'(α|ε|υ|ο|Α|Ε|Υ|Ο)(ἰ|ί|ι|ῖ|ἴ|ἶ|ἵ|ἱ|ἷ|ὶ|ἲ|ἳ)',
     'adscr_i': r'(α_|η|ω|ἀ|ἠ|ὠ|ἁ|ἡ|ὡ|ά|ή|ώ|ὰ|ὴ|ὼ|ᾶ|ῆ|ῶ|ὤ|ὥ|ὢ|ὣ|ἄ|ἅ|ἂ|ἃ|ἤ|ἥ|ἣ|ἢ|ἦ|ἧ|ἆ|ἇ|ὧ|ὦ)(ι)', # 'αι' can be dipth or adscr. since diph is commoner, we default to that
     'subscr_i': r'[ᾄᾂᾆᾀᾅᾃᾇᾁᾴᾲᾷᾳᾔᾒᾖᾐᾕᾓᾗᾑῄῂῃῇᾤᾢᾦᾠᾥᾣᾧᾡῴῲῷῳ]', # note [] for single chars. 36 chars
-    'stops': r'[βγδθκπτφχΒΓΔΘΚΠΤΦΧ]',
+    'stops': r'[ϝβγδθκπτφχΒΓΔΘΚΠΤΦΧ]',
     'liquids': r'[λρῤῥΛῬ]',
     'nasals': r'[μνΜΝ]',
     'double_cons': r'[ζξψΖΞΨ]',
@@ -63,11 +63,6 @@ patterns = {
 # ============================
 # Auxiliary Functions
 # ============================
-
-def preprocess_text(text):
-    ignore_chars = set('\n(),-.·;<>[]«»;;··†—‘’' + '×⏑⏓–') # importantly leaves ^, _ and '
-    cleaned_text = ''.join([char for char in text if char not in ignore_chars]) # leaves case alone
-    return cleaned_text
 
 def divide_into_elements(text):
     '''
@@ -80,6 +75,8 @@ def divide_into_elements(text):
     
     elements = []
     i = 0
+    greek_punctuation = r"""[‘’'\u0387\u037e\u00b7.,!?;:"()\[\]\{\}<>\-—…\n«»†×⏑⏓–]"""
+    
     while i < len(decomposed):
         # If we're at a base character, collect all its combining marks
         if unicodedata.category(decomposed[i]).startswith('L'):
@@ -101,7 +98,7 @@ def divide_into_elements(text):
                     matched = True
                     element = recomposed
                     # Check for markup after the matched element
-                    if i < len(decomposed) and decomposed[i] in '^_':
+                    if i < len(decomposed) and decomposed[i] in '^_ ':
                         element += decomposed[i]
                         i += 1
                     elements.append(element)
@@ -110,14 +107,25 @@ def divide_into_elements(text):
             if not matched:
                 # Even if no pattern matches, keep the character with its combining marks
                 elements.append(recomposed)
-            
-        elif decomposed[i] == ' ':
-            elements.append(decomposed[i])
-            i += 1
-        elif decomposed[i] in '^_':
-            # If we somehow got a lone markup character, attach it to previous element
+        
+        # Check for Greek punctuation
+        elif re.match(greek_punctuation, decomposed[i]):
+            # If we have a punctuation character, attach it to the previous element
             if elements:
                 elements[-1] += decomposed[i]
+            else:
+                # If there's no previous element, add it as a standalone character
+                elements.append(decomposed[i])
+            i += 1
+        
+        # Handle spaces or markup characters
+        elif decomposed[i] in '^_ ':
+            # If we have a space or markup character, attach it to previous element
+            if elements:
+                elements[-1] += decomposed[i]
+            else:
+                # If there's no previous element, add it as a standalone character
+                elements.append(decomposed[i])
             i += 1
         else:
             # Skip any other combining marks that appear out of place
@@ -139,7 +147,7 @@ def syllabify(divided_text):
     it checks if it can form a diphthong with the current element that matches any of the four patterns.
     Thus we can syllabify e.g. 'Δα', 'ρεῖ', 'ος'.
     '''
-    elements = divided_text.split()
+    elements = divided_text.split('⋮')
     syllables = []
     current_syllable = ''
     i = 0
@@ -175,7 +183,8 @@ def syllabify(divided_text):
 
 def reshuffle_consonants(syllables):
     '''
-    Fixed double consonants being incorrectly moved to the next syllable.
+    Reshuffles consonants between syllables.
+    Now properly handles spaces and punctuation at syllable boundaries.
     '''
     reshuffled_syllables = []
     carry_over = ''
@@ -183,10 +192,16 @@ def reshuffle_consonants(syllables):
     for i in range(len(syllables)):
         syllable = syllables[i]
 
+        # Separate any trailing whitespace or punctuation
+        trailing_chars = ''
+        while syllable and (syllable[-1].isspace() or syllable[-1] in r"""['''\u0387\u037e\u00b7.,!?;:"()\[\]\{\}<>\-—…\n«»†×⏑⏓–]"""):
+            trailing_chars = syllable[-1] + trailing_chars
+            syllable = syllable[:-1]
+
         # Handle start of line cases
         if i == 0 and not is_vowel(syllable[0]):
             vowel_index = next((index for index, char in enumerate(syllable) if is_vowel(char)), len(syllable))
-            reshuffled_syllables.append(syllable[:vowel_index])
+            reshuffled_syllables.append(syllable[:vowel_index] + trailing_chars)
             carry_over = syllable[vowel_index:]
             continue
 
@@ -196,28 +211,28 @@ def reshuffle_consonants(syllables):
 
         # Handle syllable ending
         if i < len(syllables) - 1 and is_consonant(syllable[-1]):
-            next_syllable = syllables[i + 1]
+            next_syllable = syllables[i + 1].rstrip()  # ignore trailing space in peek
             if is_vowel(next_syllable[0]):
                 # Check if the last character is a double consonant
                 if re.match(patterns['double_cons'], syllable[-1]):
-                    # Double consonants stay with the current syllable
                     carry_over = ''
                 else:
-                    # Single consonant moves to next syllable
-                    carry_over = syllable[-1]
+                    carry_over = syllable[-1] + trailing_chars  # Move trailing chars with the consonant
+                    trailing_chars = ''  # Clear trailing chars since they've been added to carry_over
                     syllable = syllable[:-1]
             else:
                 # Complex case: multiple consonants at end
                 consonant_cluster = ''.join(filter(is_consonant, syllable))
                 if len(consonant_cluster) > 1:
-                    carry_over = consonant_cluster[1:]
+                    carry_over = consonant_cluster[1:] + trailing_chars
+                    trailing_chars = ''  # Clear trailing chars
                     syllable = syllable.replace(consonant_cluster, consonant_cluster[0], 1)
 
-        reshuffled_syllables.append(syllable)
+        reshuffled_syllables.append(syllable + trailing_chars)
 
     # Add any remaining carry_over to the last syllable
     if carry_over:
-        reshuffled_syllables[-1] += carry_over
+        reshuffled_syllables[-1] = reshuffled_syllables[-1] + carry_over
 
     return reshuffled_syllables
 
@@ -225,7 +240,14 @@ def final_reshuffle(reshuffled_syllables):
     final_syllables = []
     
     for i, syllable in enumerate(reshuffled_syllables):
-        # Check for the end of the syllable having multiple consonants
+        # Separate any trailing whitespace or punctuation
+        trailing_chars = ''
+        original_syllable = syllable
+        while syllable and (syllable[-1].isspace() or syllable[-1] in r"""['''\u0387\u037e\u00b7.,!?;:"()\[\]\{\}<>\-—…\n«»†×⏑⏓–]"""):
+            trailing_chars = syllable[-1] + trailing_chars
+            syllable = syllable[:-1]
+            
+        # Check for multiple consonants at the end
         if syllable and i < len(reshuffled_syllables) - 1 and is_consonant(syllable[-1]):
             next_syllable = reshuffled_syllables[i + 1]
             # Count how many consonants are at the end
@@ -234,17 +256,16 @@ def final_reshuffle(reshuffled_syllables):
                 consonant_count += 1
             
             if consonant_count > 1:
-                # Leave one consonant at the end of the current syllable, push the rest to the next
+                # Leave one consonant at end of current syllable, push the rest to next
                 split_index = consonant_count - 1
-                final_syllables.append(syllable[:-split_index])
+                final_syllables.append(syllable[:-split_index] + trailing_chars)
                 reshuffled_syllables[i + 1] = syllable[-split_index:] + next_syllable
             else:
-                final_syllables.append(syllable)
+                final_syllables.append(original_syllable)
         else:
-            final_syllables.append(syllable)
+            final_syllables.append(original_syllable)
 
     return final_syllables
-
 
 def definitive_syllables(reshuffled_syllables):
     if not reshuffled_syllables:
@@ -269,10 +290,9 @@ def syllabifier(string):
 
     string -> list
     '''
-    normalized_string = normalize_word(string)
-    cleaned_text = preprocess_text(normalized_string)
-    divided_text = divide_into_elements(cleaned_text)
-    joined_text = ' '.join(divided_text)
+    normalized_text = normalize_word(string)
+    divided_text = divide_into_elements(normalized_text)
+    joined_text = '⋮'.join(divided_text)
     syllabified_text = syllabify(joined_text)
     reshuffled_text = reshuffle_consonants(syllabified_text)
     final_reshuffled_text = final_reshuffle(reshuffled_text)
