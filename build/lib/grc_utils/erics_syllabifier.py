@@ -10,6 +10,7 @@ all double consonants and mutae-cum-liquidae are treated as closed, i.e.
 import re
 
 from macrons_map import macrons_map
+from vowels import vowels
 
 # ============================
 # Prepare Character Patterns

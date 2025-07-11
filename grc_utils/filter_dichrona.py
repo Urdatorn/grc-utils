@@ -222,7 +222,7 @@ def long_acute(syllable):
 
 def short_vowel(syllable):
     """
-    Determines if a syllable is a short vowel. Compatible with caret markup of brevia.
+    Determines if a syllable has a short vowel. Compatible with caret markup of brevia.
     """
     if '^' in syllable:
         return True
@@ -622,3 +622,12 @@ def colour_dichrona_in_open_syllables(string):
     result.append(string[last_end:])
     
     return "".join(result)
+
+def macronization_stats(text:str, macronized_text:str) -> dict:
+    count_before = count_dichrona_in_open_syllables(text)
+    count_after = count_dichrona_in_open_syllables(macronized_text)
+            
+    difference = count_before - count_after
+    ratio = difference / count_before if count_before > 0 else 0
+
+    return difference, count_before, ratio

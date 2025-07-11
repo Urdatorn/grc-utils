@@ -141,6 +141,15 @@ def oxia_to_tonos(string):
     return ''.join(mapping.get(char, char) for char in string)
 
 def normalize_word(word):
+    '''
+    Tailors the unicodedata.normalize function for Ancient Greek
+    by ensuring that Greek question marks are preserved and oxia accents are converted to tonos.
+    '''
     normalized = unicodedata.normalize('NFC', word)
+
+    # Greek question mark inadvertently normalizes to semicolon, so we need to explicitly restore it
+    greek_question_mark = "\u037e"
+    normalized = normalized.replace(";", greek_question_mark)
+
     tonos = oxia_to_tonos(normalized)
     return tonos
