@@ -1,5 +1,5 @@
 '''
-Python's built in .lower() and .upper() work terribly for polytonic Greek.
+Python's built in .lower() and .upper() work terribly bad for polytonic Greek.
 Accents, breathings and iota subscripta vanish into the aether.
 "If you need something done, you have to do it yourself."
 

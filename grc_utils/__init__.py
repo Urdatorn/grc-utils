@@ -3,6 +3,7 @@
 from .clitics import *
 from .dichrona import *
 from .filter_dichrona import *
+from .grc_numerals import *
 from .lower_grc import *
 from .macrons_map import *
 from .sort_grc import *
