@@ -137,10 +137,14 @@ def divide_into_elements(text):
     return elements
 
 def is_vowel(element):
-    return any(re.match(patterns[vowel_type], element) for vowel_type in ['vowels', 'diphth_y', 'diphth_i', 'adscr_i', 'subscr_i'])
+    # Strip markup characters for pattern matching
+    clean_element = element.replace('^', '').replace('_', '')
+    return any(re.match(patterns[vowel_type], clean_element) for vowel_type in ['vowels', 'diphth_y', 'diphth_i', 'adscr_i', 'subscr_i'])
 
 def is_consonant(element):
-    return any(re.match(patterns[consonant_type], element) for consonant_type in ['stops', 'liquids', 'nasals', 'double_cons', 'sibilants'])
+    # Strip markup characters for pattern matching
+    clean_element = element.replace('^', '').replace('_', '')
+    return any(re.match(patterns[consonant_type], clean_element) for consonant_type in ['stops', 'liquids', 'nasals', 'double_cons', 'sibilants'])
 
 def syllabify(divided_text):
     '''
@@ -158,9 +162,14 @@ def syllabify(divided_text):
             # Check if this vowel can form a diphthong with the next element
             if i + 1 < len(elements) and is_vowel(elements[i + 1]):
                 potential_diphthong = element + elements[i + 1]
-                if (re.match(patterns['diphth_y'], potential_diphthong) or 
-                    re.match(patterns['diphth_i'], potential_diphthong) or
-                    re.match(patterns['adscr_i'], potential_diphthong)):
+                # Strip markup characters for pattern matching but preserve them in the result
+                clean_element = element.replace('^', '').replace('_', '')
+                clean_next = elements[i + 1].replace('^', '').replace('_', '')
+                clean_diphthong = clean_element + clean_next
+                
+                if (re.match(patterns['diphth_y'], clean_diphthong) or 
+                    re.match(patterns['diphth_i'], clean_diphthong) or
+                    re.match(patterns['adscr_i'], clean_diphthong)):
                     # Combine into a diphthong
                     if current_syllable:
                         syllables.append(current_syllable)
@@ -300,3 +309,10 @@ def syllabifier(string):
     definitive_text = definitive_syllables(final_reshuffled_text)
 
     return definitive_text
+
+if __name__ == '__main__':
+    
+    print(syllabifier("δα^ιμων"))
+    print(syllabifier("δαιμων"))
+    
+    
