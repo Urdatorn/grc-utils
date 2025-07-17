@@ -99,24 +99,29 @@ def open_syllable_in_word(syllable, list_of_syllables):
     
 def is_open_syllable_in_word_in_synapheia(syllable, list_of_syllables, next_word):
     '''
-    NOTE designed for words in verse synapheia:
+    Designed for words in verse synapheia, e.g. "ἐλπὶς ἀνθρώπου" = - u - - -
     
-    >>> is_open_syllable_in_word_in_synapheia("ἐλπὶς", ["ἐλ", "πὶς"], "δὲ"):
+    >>> is_open_syllable_in_word_in_synapheia("πὶς", ["ἐλ", "πὶς"], "ἀνθρώπου"):
     >>> True
 
     '''
     syllable = syllable.replace('_', '').replace('^', '')
-    base_form = only_bases(syllable)
+    final_syllable = list_of_syllables[-1].replace('_', '').replace('^', '')
 
-    if base_form[-1] in {'ζ','ξ','ψ'}:
+    syll_base = only_bases(syllable)
+    if not syll_base:
         return False
-    if base_form and base_form[-1] in all_vowels_lowercase:
+
+    if syll_base[-1] in {'ζ','ξ','ψ'}:
+        return False
+    
+    if vowel(syll_base[-1]) or len(syll_base) == 1:
         return True
-    elif len(base_form) > 1 and not next_word: 
-        if syllable == list_of_syllables[-1].replace('_', '').replace('^', '') and base_form[-2] in all_vowels_lowercase:
-            return True
-    elif len(base_form) > 1 and next_word and vowel(next_word[0]): 
-        if syllable == list_of_syllables[-1].replace('_', '').replace('^', '') and base_form[-2] in all_vowels_lowercase:
+
+    # The only way a closed syll can be opened by synapheia
+    # is if it's the ultima and the following word starts with a vowel:
+    if syllable == final_syllable:
+        if next_word and vowel(next_word[0]):
             return True
     else:
         return False

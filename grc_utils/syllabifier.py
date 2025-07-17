@@ -21,7 +21,7 @@ TODO 27/3 -25 I'm getting some shitty split diphthongs like: [(-4, 'δα'), (-3,
 import re
 import unicodedata
 
-from .lower_grc import CONSONANTS_LOWER_TO_UPPER, CONSONANTS_UPPER_TO_LOWER, VOWELS_LOWER_TO_UPPER, VOWELS_UPPER_TO_LOWER
+from .lower_grc import VOWELS_LOWER_TO_UPPER
 from .macrons_map import macrons_map
 from .utils import normalize_word
 from .vowels import vowel
@@ -309,10 +309,3 @@ def syllabifier(string):
     definitive_text = definitive_syllables(final_reshuffled_text)
 
     return definitive_text
-
-if __name__ == '__main__':
-    
-    print(syllabifier("δα^ιμων"))
-    print(syllabifier("δαιμων"))
-    
-    
