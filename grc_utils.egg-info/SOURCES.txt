@@ -6,6 +6,7 @@ grc_utils/__init__.py
 grc_utils/clitics.py
 grc_utils/dichrona.py
 grc_utils/filter_dichrona.py
+grc_utils/grc_numerals.py
 grc_utils/lower_grc.py
 grc_utils/macrons_map.py
 grc_utils/sort_grc.py

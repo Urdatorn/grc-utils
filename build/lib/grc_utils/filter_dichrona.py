@@ -24,10 +24,11 @@ Note concerning the logical relationship between the five accentuation word clas
 import re
 import unicodedata
 
-from utils import oxia_to_tonos, open_syllable
-from dichrona import DICHRONA
-from erics_syllabifier import patterns, syllabifier
-from longa import longa_set
+from .utils import is_open_syllable_in_word_in_synapheia, open_syllable_in_word, oxia_to_tonos
+from .dichrona import DICHRONA
+from .syllabifier import patterns, syllabifier
+from .vowels_short import short_set
+from .vowels import ACUTES, vowel
 
 # ============================
 # Syllable Positions 
@@ -41,6 +42,7 @@ def ultima(word):
     >> ultima('ποτιδέρκομαι')
     >> μαι
     '''
+    word = word.replace('_', '').replace('^', '')
     list_of_syllables = syllabifier(word)
     ultima = list_of_syllables[-1]
 
@@ -51,6 +53,7 @@ def penultima(word):
     >> penultima('ποτιδέρκομαι')
     >> κο
     '''
+    word = word.replace('_', '').replace('^', '')
     list_of_syllables = syllabifier(word)
     penultima = list_of_syllables[-2]
 
@@ -69,6 +72,7 @@ def properispomenon(word):
     >> properispomenon('ὗσον')
     >> True
     '''
+    word = word.replace('_', '').replace('^', '')
     list_of_syllables = syllabifier(word)
     if len(list_of_syllables) >= 2: 
         penultima = list_of_syllables[-2]
@@ -86,6 +90,7 @@ def paroxytone(word):
     >> paroxytone('λελῠμένος')
     >> True
     '''
+    word = word.replace('_', '').replace('^', '')
     list_of_syllables = syllabifier(word)
     if len(list_of_syllables) >= 2: 
         penultima = list_of_syllables[-2]
@@ -103,6 +108,7 @@ def proparoxytone(word):
     >> proparoxytone('ποτιδέρκομαι')
     >> True
     '''
+    word = word.replace('_', '').replace('^', '')
     list_of_syllables = syllabifier(word)
     if len(list_of_syllables) >= 3: 
         antepenultima = list_of_syllables[-3]
@@ -208,29 +214,26 @@ long_acutes = r'(' + '|'.join(re.escape(char) for char in dichrona_long_acutes) 
 
 def long_acute(syllable):
     '''
-    Function needed to compute the paroxytone versiom of the σωτῆρα-rule.
+    Function needed to compute the paroxytone version of the σωτῆρα-rule.
     '''
+    if '_' in syllable and any(char in ACUTES for char in syllable):
+        return True
     return bool(re.search(long_acutes, syllable))
 
 def short_vowel(syllable):
     """
-    Determines if a syllable is a short vowel.
-
-    A syllable is considered short if it is not in the set of long vowels.
-
-    Args:
-        syllable (str): The syllable to check.
-
-    Returns:
-        bool: True if the syllable is short, False otherwise.
+    Determines if a syllable has a short vowel. Compatible with caret markup of brevia.
     """
-    long_vowels_pattern = re.compile('|'.join(re.escape(v) for v in longa_set | {'η', 'ω'}))
-    return not bool(long_vowels_pattern.search(syllable))
+    if '^' in syllable:
+        return True
+
+    return any(vowel in syllable for vowel in short_set)
 
 def make_only_greek(string):
     """
     Extracts only valid Greek substrings using defined patterns.
     NB: Removes space and punctuation!
+    NB! Does not work for combining characters with macrons!
     'ἱππιᾱτρῐκός hippiātrikós' -> 'ἱππιᾱτρῐκός'
     'δῆμος' -> 'δῆμος'
     '12345' -> ''
@@ -457,7 +460,7 @@ def has_ambiguous_dichrona_in_open_syllables(string):
     dichronic_open_syllable_positions = [
         (-(total_syllables - i), syllable)  # Position from the end
         for i, syllable in enumerate(list_of_syllables)
-        if word_with_real_dichrona(syllable) and open_syllable(syllable)
+        if word_with_real_dichrona(syllable) and open_syllable_in_word(syllable, list_of_syllables)
     ]
 
     if not dichronic_open_syllable_positions:
@@ -480,3 +483,151 @@ def has_ambiguous_dichrona_in_open_syllables(string):
         return True
 
     return False
+
+# ============================
+# Counting 
+# ============================
+
+def count_ambiguous_dichrona_in_open_syllables(string):
+    count = 0
+    
+    if not string:
+        return count
+
+    string = unicodedata.normalize('NFC', oxia_to_tonos(string))
+    if not has_ambiguous_dichrona(string):
+        return count
+    
+    words = re.findall(r'[\w_^]+', string)
+    words = [word for word in words if any(vowel(char) for char in word)]
+    for word in words:
+        list_of_syllables = syllabifier(word) # I've updated the syllabifier to support markup (^, _)
+        total_syllables = len(list_of_syllables)
+
+        dichronic_open_syllable_positions = [
+            (-(total_syllables - i), syllable)  # Position from the end
+            for i, syllable in enumerate(list_of_syllables)
+            if word_with_real_dichrona(syllable) and open_syllable_in_word(syllable, list_of_syllables)
+        ]
+        #print(dichronic_open_syllable_positions) # debugging
+
+        if not dichronic_open_syllable_positions:
+            continue
+        
+        if total_syllables < 2:
+            count += 1
+            continue
+        
+        ultima = list_of_syllables[-1]
+        penultima = list_of_syllables[-2]
+
+        for position, syllable in dichronic_open_syllable_positions:
+            if position == -2 and paroxytone(word) and short_vowel(ultima):
+                continue  # Penultima disambiguated
+            elif position == -1 and paroxytone(word) and long_acute(penultima):
+                continue  # Ultima disambiguated
+            elif position == -1 and properispomenon(word) or proparoxytone(word):
+                continue  # Ultima disambiguated
+            elif any(char in '^_' for char in syllable): # means syllable has been macronized already
+                continue
+            else:
+                count += 1
+
+    return count
+
+def count_dichrona_in_open_syllables(string):
+    count = 0
+    
+    if not string:
+        return count
+
+    string = unicodedata.normalize('NFC', oxia_to_tonos(string))
+    
+    words = re.findall(r'[\w_^]+', string)
+    words = [word for word in words if any(vowel(char) for char in word)]
+    for i, word in enumerate(words):
+        list_of_syllables = syllabifier(word)
+        if i < len(words) - 1:
+            next_word = words[i + 1]
+            for syllable in list_of_syllables:
+                if word_with_real_dichrona(syllable) and is_open_syllable_in_word_in_synapheia(syllable, list_of_syllables, next_word) and not any(char in '^_' for char in syllable): # = unmacronized open dichronon in synapheia
+                    count += 1
+        else:
+            for syllable in list_of_syllables:
+                if word_with_real_dichrona(syllable) and open_syllable_in_word(syllable, list_of_syllables) and not any(char in '^_' for char in syllable): # = unmacronized open dichronon at line end
+                    count += 1
+
+    return count
+
+def colour_dichrona_in_open_syllables(string):
+    if not string:
+        return string
+
+    # Normalize and convert oxia to tonos
+    string = unicodedata.normalize('NFC', oxia_to_tonos(string))
+    
+    # Split into words and filter for those with vowels
+    words = re.findall(r'[\w_^]+', string)
+    words = [word for word in words if any(vowel(char) for char in word)]
+    
+    # Process each word and build the colored output
+    result = []
+    last_end = 0
+    
+    for word in words:
+        # Find the word's position in the original string
+        start = string.index(word, last_end)
+        end = start + len(word)
+        
+        # Add any non-word characters before this word
+        result.append(string[last_end:start])
+        
+        # Syllabify the word
+        list_of_syllables = syllabifier(word)
+        colored_word = ""
+        
+        # Process each character with look-ahead for _ or ^
+        for i, char in enumerate(word):
+            # Check if this char is followed by _ or ^
+            is_green = (i + 1 < len(word) and word[i + 1] in '_^')
+            
+            # Check if this char is part of a dichrona in an open syllable
+            is_red = False
+            if not is_green and not (char in '_^'):  # Skip if it's _ or ^ itself
+                # Find which syllable this char belongs to
+                char_pos = 0
+                for syllable in list_of_syllables:
+                    syllable_len = len(syllable)
+                    if char_pos <= i < char_pos + syllable_len:
+                        if (word_with_real_dichrona(syllable) and 
+                            open_syllable_in_word(syllable, list_of_syllables) and 
+                            not any(c in '^_' for c in syllable) and 
+                            vowel(char)):
+                            is_red = True
+                        break
+                    char_pos += syllable_len
+            
+            # Apply coloring
+            if is_red:
+                colored_word += f'\033[31m{char}\033[0m'
+            elif is_green:
+                colored_word += f'\033[32m{char}\033[0m'
+            else:
+                colored_word += char
+        
+        result.append(colored_word)
+        last_end = end
+    
+    # Add any remaining characters after the last word
+    result.append(string[last_end:])
+    
+    return "".join(result)
+
+def macronization_stats(text:str, macronized_text:str) -> dict:
+    count_before = count_dichrona_in_open_syllables(text)
+    count_after = count_dichrona_in_open_syllables(macronized_text)
+            
+    difference = count_before - count_after
+    ratio = difference / count_before if count_before > 0 else 0
+
+    return difference, count_before, ratio
