@@ -22,8 +22,8 @@ CONSONANTS_UPPER_TO_LOWER = {
     "\u039d": "\u03bd",  # Ν → ν (Nu)
     "\u039e": "\u03be",  # Ξ → ξ (Xi)
     "\u03a0": "\u03c0",  # Π → π (Pi)
-    "\u1fec": "\u1fe5",  # Ῥ → ῤ (Rough Rho) # Only rough rho can appear in capitalization (except hypothetically in Aeolic)
-    "\u03a3": "\u03c3",  # Σ → σ (Sigma)
+    "\u1fec": "\u1fe5",  # Ῥ → ῥ (Rough Rho) # Only rough rho can appear in capitalization (except hypothetically in Aeolic)
+    "\u03a3": "\u03c3",  # Σ → σ (Sigma) # TODO: doesn't work for final sigma, need workaround?
     "\u03da": "\u03db",  # Ϛ → ϛ (Stigma)
     "\u03e0": "\u03e1",  # Ϡ → ϡ (Sampi)
     "\u0372": "\u0373",  # Ͳ → ͳ (Archaic Sampi)
@@ -36,6 +36,10 @@ CONSONANTS_UPPER_TO_LOWER = {
 }
 
 CONSONANTS_LOWER_TO_UPPER = {CONSONANTS_UPPER_TO_LOWER[key]: key for key in CONSONANTS_UPPER_TO_LOWER}
+
+CONSONANTS = set(CONSONANTS_UPPER_TO_LOWER.keys()) | set(CONSONANTS_UPPER_TO_LOWER.values()) | set(["ῤ", "ρ", "ς"])
+
+UPPER_FIRST_IN_DIPHTHONG = list("ΑΕΗΟΥΩ")
 
 UPPER_SMOOTH = [  #
     "\u1f08",  # Ἀ Greek Capital Letter Alpha with Psili
@@ -131,6 +135,8 @@ UPPER_ROUGH_CIRCUMFLEX = [  #
     "\u1f9f",  # ᾟ Greek Capital Letter Eta With Dasia And Perispomeni And Prosgegrammeni
     "\u1faf",  # ᾯ Greek Capital Letter Omega With Dasia And Perispomeni And Prosgegrammeni
 ]
+
+LOWER_FIRST_IN_DIPHTHONG = list("αεηουω")
 
 LOWER_SMOOTH = [  #
     "\u1f00",  # ἀ Greek Small Letter Alpha With Psili
@@ -229,6 +235,7 @@ LOWER_ROUGH_CIRCUMFLEX = [  #
 ]
 
 VOWELS_UPPER_TO_LOWER = {
+**{UPPER_FIRST_IN_DIPHTHONG[i]: LOWER_FIRST_IN_DIPHTHONG[i] for i in range(len(UPPER_FIRST_IN_DIPHTHONG))},
 **{UPPER_SMOOTH[i]: LOWER_SMOOTH[i] for i in range(len(UPPER_SMOOTH))},
 **{UPPER_SMOOTH_ACUTE[i]: LOWER_SMOOTH_ACUTE[i] for i in range(len(UPPER_SMOOTH_ACUTE))},
 **{UPPER_SMOOTH_GRAVE[i]: LOWER_SMOOTH_GRAVE[i] for i in range(len(UPPER_SMOOTH_GRAVE))},
