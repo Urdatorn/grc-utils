@@ -337,6 +337,9 @@ def syllabifier(string, debug=False):
 
     string -> list
     '''
+    if not string:
+        return None
+
     normalized_text = normalize_word(string)
     if debug:
         print(f"Normalized text: {normalized_text}")
