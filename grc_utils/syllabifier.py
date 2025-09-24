@@ -16,6 +16,22 @@ NOTE since wiktionary has macrons, I added vowels with macra and brevia from mac
 
 TODO Add option for comic homosyllabic mutae cum liquidae.
 TODO 27/3 -25 I'm getting some shitty split diphthongs like: [(-4, 'δα'), (-3, 'ρε'), (-2, 'ῖ'), (-1, 'ος')]
+
+BUG
+
+Why does τοῖος· ἀλλ give ['τοῖ', 'ος· ', 'ἀλλ'] and not the correct ['τοῖ', 'ο', 'ς· ἀλλ']?
+Note that "τοῖος ἀλλ" correctly gives ['τοῖ', 'ο', 'ς ἀλλ'],
+while "τοῖος·ἀλλ" gives the error ['τοῖ', 'ος·', 'ἀλλ'],
+so clearly the culprit is the MIDDLE DOT.
+
+Debug output:
+Normalized text: τοῖος· ἀλλ
+Divided text: ['τ', 'ο', 'ῖ', 'ο', 'ς· ', 'ἀ', 'λ', 'λ']
+Joined text: τ⋮ο⋮ῖ⋮ο⋮ς· ⋮ἀ⋮λ⋮λ
+Syllabified text: ['τ', 'οῖ', 'ος· ', 'ἀλλ']
+Reshuffled text: ['τ', 'οῖ', 'ος· ', 'ἀλλ']
+Final reshuffled text: ['τ', 'οῖ', 'ος· ', 'ἀλλ']
+['τοῖ', 'ος· ', 'ἀλλ']
 '''
 
 import re
@@ -70,6 +86,8 @@ def divide_into_elements(text):
     Draws on the patterns dictionary to divide the text into elements.
     Keeps markup characters (^ and _) with their preceding character.
     Also keeps combining diacritics with their base characters.
+    Attaches any Greek punctuation at the very start of the string
+    to the first syllable instead of storing it separately.
     '''
     # First decompose the text to handle combining diacritics properly
     decomposed = unicodedata.normalize('NFD', text)
@@ -77,7 +95,13 @@ def divide_into_elements(text):
     elements = []
     i = 0
     greek_punctuation = r"""[‘’'\u0387\u037e\u00b7.,!?;:"()\[\]\{\}<>\-—…\n«»†×⏑⏓–]"""
-    
+
+    # --- NEW: capture all leading punctuation and hold it in a buffer
+    leading_punct = ""
+    while i < len(decomposed) and re.match(greek_punctuation, decomposed[i]):
+        leading_punct += decomposed[i]
+        i += 1
+
     while i < len(decomposed):
         # If we're at a base character, collect all its combining marks
         if unicodedata.category(decomposed[i]).startswith('L'):
@@ -98,6 +122,11 @@ def divide_into_elements(text):
                 if match:
                     matched = True
                     element = recomposed
+                    # Attach any buffered leading punctuation to this *first* element
+                    if leading_punct:
+                        element = leading_punct + element
+                        leading_punct = ""  # clear buffer
+                    
                     # Check for markup after the matched element
                     if i < len(decomposed) and decomposed[i] in '^_ ':
                         element += decomposed[i]
@@ -106,32 +135,37 @@ def divide_into_elements(text):
                     break
             
             if not matched:
-                # Even if no pattern matches, keep the character with its combining marks
-                elements.append(recomposed)
+                element = recomposed
+                if leading_punct:
+                    element = leading_punct + element
+                    leading_punct = ""
+                elements.append(element)
         
         # Check for Greek punctuation
         elif re.match(greek_punctuation, decomposed[i]):
-            # If we have a punctuation character, attach it to the previous element
+            # If we have punctuation, attach to previous element
             if elements:
                 elements[-1] += decomposed[i]
             else:
-                # If there's no previous element, add it as a standalone character
-                elements.append(decomposed[i])
+                # If no element yet, keep buffering as "leading"
+                leading_punct += decomposed[i]
             i += 1
         
         # Handle spaces or markup characters
         elif decomposed[i] in '^_ ':
-            # If we have a space or markup character, attach it to previous element
             if elements:
                 elements[-1] += decomposed[i]
             else:
-                # If there's no previous element, add it as a standalone character
-                elements.append(decomposed[i])
+                # Still no element, attach to leading_punct
+                leading_punct += decomposed[i]
             i += 1
         else:
-            # Skip any other combining marks that appear out of place
             if not unicodedata.category(decomposed[i]).startswith('M'):
-                elements.append(decomposed[i])
+                element = decomposed[i]
+                if leading_punct:
+                    element = leading_punct + element
+                    leading_punct = ""
+                elements.append(element)
             i += 1
 
     return elements
@@ -189,6 +223,9 @@ def syllabify(divided_text):
             i += 1
     if current_syllable:
         syllables.append(current_syllable)
+
+    syllables = [syl for syl in syllables if syl]  # UPDATE: Remove if not a real syllable (had errors here from Pindar)
+    #syllables = [syl for syl in syllables if any(is_vowel(char) for char in syl)]  # UPDATE: Remove if not a real syllable (had errors here from Pindar)
     return syllables
 
 def reshuffle_consonants(syllables):
@@ -292,7 +329,7 @@ def definitive_syllables(reshuffled_syllables):
 # Syllabifier
 # ============================
 
-def syllabifier(string):
+def syllabifier(string, debug=False):
     '''
     all double consonants and mutae-cum-liquidae are treated as closed, i.e.
     >>syllabifier('πατρός')
@@ -301,11 +338,23 @@ def syllabifier(string):
     string -> list
     '''
     normalized_text = normalize_word(string)
+    if debug:
+        print(f"Normalized text: {normalized_text}")
     divided_text = divide_into_elements(normalized_text)
+    if debug:
+        print(f"Divided text: {divided_text}")
     joined_text = '⋮'.join(divided_text)
+    if debug:
+        print(f"Joined text: {joined_text}")
     syllabified_text = syllabify(joined_text)
+    if debug:
+        print(f"Syllabified text: {syllabified_text}")
     reshuffled_text = reshuffle_consonants(syllabified_text)
+    if debug:
+        print(f"Reshuffled text: {reshuffled_text}")
     final_reshuffled_text = final_reshuffle(reshuffled_text)
+    if debug:
+        print(f"Final reshuffled text: {final_reshuffled_text}")
     definitive_text = definitive_syllables(final_reshuffled_text)
 
     return definitive_text
