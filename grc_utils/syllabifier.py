@@ -11,6 +11,10 @@ divides the greek into syllables (adapted from DionysiusRecomposed)
 >>syllabifier('δεινῆι')
 >>['δει', 'νῆι']
 
+This script is extremely good and well tested, but a few bugs remain. 
+The goal is to keep punctuation as "second class citizens" that always attach to previous alphabet chars 
+and that we have the sanity check that the joined output should always be the same as the input.
+
 NOTE requires corpus normalized to not include the oxia variants of άέήίόύώ, only tonos
 NOTE since wiktionary has macrons, I added vowels with macra and brevia from macrons_map.py
 
@@ -233,6 +237,8 @@ def reshuffle_consonants(syllables):
     Reshuffles consonants between syllables.
     Now properly handles spaces and punctuation at syllable boundaries.
     '''
+    syllables = [syl for syl in syllables if syl]
+    
     reshuffled_syllables = []
     carry_over = ''
 
@@ -246,10 +252,14 @@ def reshuffle_consonants(syllables):
             syllable = syllable[:-1]
 
         # Handle start of line cases
-        if i == 0 and not is_vowel(syllable[0]):
-            vowel_index = next((index for index, char in enumerate(syllable) if is_vowel(char)), len(syllable))
-            reshuffled_syllables.append(syllable[:vowel_index] + trailing_chars)
-            carry_over = syllable[vowel_index:]
+        if syllable:
+            if i == 0 and not is_vowel(syllable[0]):
+                vowel_index = next((index for index, char in enumerate(syllable) if is_vowel(char)), len(syllable))
+                reshuffled_syllables.append(syllable[:vowel_index] + trailing_chars)
+                carry_over = syllable[vowel_index:]
+                continue
+        else:
+            reshuffled_syllables.append(trailing_chars)
             continue
 
         # Prepend carry_over if present
@@ -360,4 +370,33 @@ def syllabifier(string, debug=False):
         print(f"Final reshuffled text: {final_reshuffled_text}")
     definitive_text = definitive_syllables(final_reshuffled_text)
 
+    # Sanity checks
+    if debug:
+        joined_output = "".join(definitive_text)
+        if joined_output != normalized_text:
+            print(f"Syllabification perverted the text: {joined_output} != {normalized_text}")
+
     return definitive_text
+
+leading_punct = "· πατρός"
+assert syllabifier(leading_punct) == ['· πατ', 'ρός'], f"Failed leading punctuation test: {syllabifier(leading_punct)}"
+
+# syllabifier('φόρμιγξ, Ἀπόλλωνος') == ['φόρ', 'μιγ', 'ξ, Ἀ', 'πόλ', 'λω', 'νος']
+# Debug output:
+# Normalized text: φόρμιγξ, Ἀπόλλωνος
+# Divided text: ['φ', 'ό', 'ρ', 'μ', 'ι', 'γ', 'ξ, ', 'Ἀ', 'π', 'ό', 'λ', 'λ', 'ω', 'ν', 'ο', 'ς']
+# Joined text: φ⋮ό⋮ρ⋮μ⋮ι⋮γ⋮ξ, ⋮Ἀ⋮π⋮ό⋮λ⋮λ⋮ω⋮ν⋮ο⋮ς
+# Syllabified text: ['φ', 'όρμ', 'ιγξ, ', 'Ἀπ', 'όλλ', 'ων', 'ος']
+# Reshuffled text: ['φ', 'όρ', 'μιγξ, ', 'Ἀ', 'πόλ', 'λω', 'νος']
+# Final reshuffled text: ['φ', 'όρ', 'μιγ, ', 'ξἈ', 'πόλ', 'λω', 'νος']
+# ['φόρ', 'μιγ, ', 'ξἈ', 'πόλ', 'λω', 'νος']
+
+# syllabifier("τοῖος· ἀλλ") == ['τοῖ', 'ο', 'ς· ἀλλ']
+# Debug output:
+# Normalized text: τοῖος· ἀλλ
+# Divided text: ['τ', 'ο', 'ῖ', 'ο', 'ς· ', 'ἀ', 'λ', 'λ']
+# Joined text: τ⋮ο⋮ῖ⋮ο⋮ς· ⋮ἀ⋮λ⋮λ
+# Syllabified text: ['τ', 'οῖ', 'ος· ', 'ἀλλ']
+# Reshuffled text: ['τ', 'οῖ', 'ος· ', 'ἀλλ']
+# Final reshuffled text: ['τ', 'οῖ', 'ος· ', 'ἀλλ']
+# ['τοῖ', 'ος· ', 'ἀλλ']

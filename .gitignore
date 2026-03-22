@@ -2,5 +2,10 @@
 # DO NOT INCLUDE __init__.py OTHERWISE IMPORTS WILL NOT WORK
 .DS_Store
 __pycache__
+grc_utils/__pycache__
+.vscode
 
+# Build artefacts
+grc_utils.egg-info/
 build/
+dist/
